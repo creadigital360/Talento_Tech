@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Clase Magistral - JavaScript</title>
+  <!-- Librería Chart.js desde CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Clases, Herencia y Librerías en JavaScript</h1>
+
+  <h2>Ejemplo de Clases</h2>
+  <pre id="output1"></pre>
+
+  <h2>Ejemplo de Herencia</h2>
+  <pre id="output2"></pre>
+
+  <h2>Uso de Librería (Chart.js)</h2>
+  <canvas id="miGrafica" width="400" height="200"></canvas>
+
+  <script>
+    // ==============================
+    // 1. CLASES EN JAVASCRIPT
+    // ==============================
+    class Persona {
+      constructor(nombre, edad) {
+        this.nombre = nombre;
+        this.edad = edad;
+      }
+      saludar() {
+        return `Hola, soy ${this.nombre} y tengo ${this.edad} años.`;
+      }
+    }
+
+    // Creamos un objeto de tipo Persona
+    const alumno = new Persona("Nilson Machado", 25);
+    document.getElementById("output1").textContent = alumno.saludar();
+
+    // ==============================
+    // 2. HERENCIA EN JAVASCRIPT
+    // ==============================
+    class Estudiante extends Persona {
+      constructor(nombre, edad, curso) {
+        super(nombre, edad);
+        this.curso = curso;
+      }
+      presentar() {
+        return `Soy ${this.nombre}, curso ${this.curso}.`;
+      }
+    }
+
+    const estudiante1 = new Estudiante("Yaniher Smith", 20, "Programación");
+    document.getElementById("output2").textContent =
+      estudiante1.saludar() + "\n" + estudiante1.presentar();
+
+    // ==============================
+    // 3. USO DE UNA LIBRERÍA: Chart.js
+    // ==============================
+    // Gráfica radar simple
+    const ctx = document.getElementById('miGrafica').getContext('2d');
+    new Chart(ctx, {
+      type: '"pie',
+      data: {
+        labels: ['Enero', 'Febrero', 'Marzo'],
+        datasets: [{
+          label: 'Estudiantes inscritos',
+          data: [10, 20, 15],
+          backgroundColor: 'rgba(54, 162, 235, 0.2)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          pointBackgroundColor: 'rgba(54, 162, 235, 1)'
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true }
+        },
+        scales: {
+          r: { beginAtZero: true }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
