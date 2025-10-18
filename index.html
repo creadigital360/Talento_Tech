@@ -81,7 +81,7 @@
   <a href="#servicios">Servicios</a>
    <a href="#Galería">Galería</a>
     <a href="#Blog">Blog</a>
-  <a href="#" id="link-contacto">Contacto</a>
+  <a href="#" id="link-contacto" >Contacto</a>
 </nav>
 
 <!-- ====== INICIO ====== -->
@@ -133,7 +133,7 @@
   <div class="servicios-head">
     <h2>Servicios</h2>
     <div class="servicios-cta">
-      <a href="#" id="cta-contacto">Solicitar una cotización</a>
+      <a href="#" id="cta-contactos">Solicitar una cotización</a>
     </div>
   </div>
 
@@ -296,6 +296,10 @@
   // Botón “Solicitar una cotización” abre el modal (sin tocar app.js)
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('cta-contacto')?.addEventListener('click', (e)=>{
+      e.preventDefault();
+      document.getElementById('link-contacto')?.click();
+    });
+    document.getElementById('cta-contactos')?.addEventListener('click', (e)=>{
       e.preventDefault();
       document.getElementById('link-contacto')?.click();
     });
