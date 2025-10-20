@@ -43,24 +43,24 @@ document.addEventListener('DOMContentLoaded', () => {
     overlay.addEventListener('click', e => { if(e.target === overlay) closeModal(); });
     document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
 
-    // Lógica de Envío del Formulario (CORREGIDA)
+    // ------------------------------------------
+    // Lógica de Envío del Formulario (CORRECCIÓN FINAL)
+    // ------------------------------------------
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // 1. Validación nativa del formulario
         if(!form.checkValidity()){ 
             form.reportValidity(); 
             return; 
         }
 
-        // 2. Recoger datos con FormData (compatible con servicios externos)
         const formData = new FormData(form);
         
-        // 3. Revisar Honeypot (campo '_gotcha')
-        // Si el campo oculto tiene algo, es un bot. Simular éxito y terminar.
+        // Revisar Honeypot (campo '_gotcha')
         const honeypotValue = formData.get('_gotcha');
 
         if (honeypotValue && honeypotValue.length > 0) {
+            // Es un bot. Simular éxito y terminar.
             setLoading(false);
             showToast('¡Gracias! Tu mensaje fue enviado con éxito.', true);
             form.reset();
@@ -68,34 +68,35 @@ document.addEventListener('DOMContentLoaded', () => {
             return; 
         }
         
-        // 4. Configurar Timeout y estado de carga
         const controller = new AbortController();
         const t = setTimeout(() => controller.abort(), 15000);
 
         setLoading(true);
         try{
-            // 5. Enviar usando fetch a la URL definida en el atributo 'action' del HTML
+            // Enviamos FormData al action del formulario (URL de Formspree)
             const res = await fetch(form.action, {
                 method:'POST',
-                // Enviamos el objeto FormData. NO se necesitan headers JSON
                 body: formData, 
                 signal: controller.signal
             });
 
             clearTimeout(t);
 
-            // 6. Manejo de la Respuesta
+            // Si la respuesta no es OK (código 2xx), lanzamos un error.
+            // Esto captura errores 400, 403, 500, etc., que Formspree devuelve
+            // Y ELIMINAMOS la lectura compleja de JSON/Texto que causaba el error de formato inesperado.
             if(!res.ok){
-                let errorData;
-                const ct = res.headers.get('content-type') || '';
-                if (ct.includes('application/json')) {
-                    errorData = await res.json();
-                    throw new Error(errorData?.error || 'Error desconocido del servicio.');
+                // Intentamos leer el JSON de error de Formspree si está disponible
+                try {
+                    const errorData = await res.json();
+                    throw new Error(errorData?.error || 'Error al procesar la solicitud. Verifica tu configuración en Formspree.');
+                } catch (jsonError) {
+                    // Si falla la lectura del JSON, el error se maneja como genérico.
+                    throw new Error('El servicio de formularios externo falló con código de error ' + res.status);
                 }
-                throw new Error('El servicio de formularios externo falló.');
             }
 
-            // Éxito
+            // Éxito (Formspree devolvió un código 2xx)
             setLoading(false);
             showToast('¡Gracias! Tu mensaje fue enviado con éxito.', true);
             form.reset();
@@ -109,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (err.name === 'AbortError') {
                 showToast('El servidor tardó demasiado en responder.', false);
             } else if (String(err).includes('Failed to fetch') || err instanceof TypeError) {
-                showToast('No se pudo conectar con el servicio externo. Verifica tu URL de acción.', false);
+                showToast('No se pudo conectar con el servicio externo. Revisa tu URL de Formspree.', false);
             } else {
                 showToast(err.message || 'Error al enviar. Inténtalo más tarde.', false);
             }
