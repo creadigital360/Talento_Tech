@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setLoading(true);
     try{
-      const res = await fetch('contacto.php', {
+      const res = await fetch('https://formspree.io/f/tu-codigo-de-formulario', { 
+/* ... */
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify(payload),
