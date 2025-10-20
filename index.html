@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
 
     // ------------------------------------------
-    // Lógica de Envío del Formulario (CORRECCIÓN FINAL)
+    // Lógica de Envío del Formulario (CORRECCIÓN FINAL Y ROBUSTA)
     // ------------------------------------------
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -60,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const honeypotValue = formData.get('_gotcha');
 
         if (honeypotValue && honeypotValue.length > 0) {
-            // Es un bot. Simular éxito y terminar.
             setLoading(false);
             showToast('¡Gracias! Tu mensaje fue enviado con éxito.', true);
             form.reset();
@@ -82,21 +81,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             clearTimeout(t);
 
-            // Si la respuesta no es OK (código 2xx), lanzamos un error.
-            // Esto captura errores 400, 403, 500, etc., que Formspree devuelve
-            // Y ELIMINAMOS la lectura compleja de JSON/Texto que causaba el error de formato inesperado.
+            // CORRECCIÓN CRÍTICA: Solo verificamos el estado HTTP.
+            // Formspree devuelve 200/302 para éxito. Si falla, es un error HTTP 4xx/5xx.
             if(!res.ok){
-                // Intentamos leer el JSON de error de Formspree si está disponible
+                // Si la respuesta no es OK, siempre es un error, sin importar el formato.
+                // Intentar obtener el error, pero manejar la excepción si no es JSON.
+                let errorMsg = `Error al enviar. Código: ${res.status}.`;
+
                 try {
+                    // Intenta leer el cuerpo para obtener un error detallado de Formspree
                     const errorData = await res.json();
-                    throw new Error(errorData?.error || 'Error al procesar la solicitud. Verifica tu configuración en Formspree.');
-                } catch (jsonError) {
-                    // Si falla la lectura del JSON, el error se maneja como genérico.
-                    throw new Error('El servicio de formularios externo falló con código de error ' + res.status);
+                    errorMsg = errorData?.error || errorMsg;
+                } catch (e) {
+                    // Ignoramos el error de formato JSON si la respuesta no fue OK,
+                    // y usamos el mensaje de error genérico.
                 }
+
+                throw new Error(errorMsg);
             }
 
-            // Éxito (Formspree devolvió un código 2xx)
+            // Éxito (Formspree devolvió un código 2xx/3xx)
             setLoading(false);
             showToast('¡Gracias! Tu mensaje fue enviado con éxito.', true);
             form.reset();
@@ -110,8 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (err.name === 'AbortError') {
                 showToast('El servidor tardó demasiado en responder.', false);
             } else if (String(err).includes('Failed to fetch') || err instanceof TypeError) {
-                showToast('No se pudo conectar con el servicio externo. Revisa tu URL de Formspree.', false);
+                showToast('No se pudo conectar con el servicio. Revisa tu URL de Formspree.', false);
             } else {
+                // Muestra el mensaje de error del servidor o el genérico
                 showToast(err.message || 'Error al enviar. Inténtalo más tarde.', false);
             }
         }
