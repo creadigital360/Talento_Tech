@@ -1,308 +1,118 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Crea Digital 360</title>
-  <link rel="stylesheet" href="style.css" />
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const ul = document.getElementById('news-list');
-    if (!ul) return;
+document.addEventListener('DOMContentLoaded', () => {
+    // Definiciones de elementos del DOM
+    const overlay = document.getElementById('cd360-overlay');
+    const toast = document.getElementById('cd360-toast');
+    const linkContacto = document.getElementById('link-contacto');
+    const btnClose = document.querySelector('.cd360-close');
+    const btnCancelar = document.getElementById('cd360-cancelar');
+    const form = document.getElementById('cd360-contact-form');
+    const btnEnviar = document.getElementById('cd360-enviar');
 
-    const noticias = [
-      { t: 'IA y personalización lideran el marketing 2025', u: '#' },
-      { t: 'SEO: cambios recientes que debes conocer', u: '#' },
-      { t: 'Campañas que convierten: 5 aprendizajes clave', u: '#' },
-      { t: 'Email marketing: cómo subir apertura y CTR', u: '#' },
-      { t: 'UI/UX: microinteracciones que mejoran la conversión', u: '#' }
-    ];
-
-    ul.innerHTML = noticias.map(n => 
-      `<li><a href="${n.u}" target="_blank" rel="noopener">${n.t}</a></li>`
-    ).join('');
-  });
-</script>
-
-
-  <!-- Extensiones de estilo SOLO para la sección Servicios (sin tocar style.css) -->
-  <style>
-    .servicios-wrap { padding: 24px 20px; max-width: 1400px; margin: 0 auto; }
-    .servicios-head {
-      display:flex; align-items:center; justify-content:space-between; gap:14px;
-      margin-bottom:16px;
+    // Funciones de utilidad
+    function openModal(){
+        overlay.style.display='flex';
+        overlay.setAttribute('aria-hidden','false');
+        setTimeout(()=> document.getElementById('cd360-nombre')?.focus(), 80);
     }
-    .servicios-head h2 { margin:0 }
-    .servicios-grid{
-      display:grid; gap:16px;
-      grid-template-columns: repeat(12, 1fr);
+    function closeModal(){
+        overlay.style.display='none';
+        overlay.setAttribute('aria-hidden','true');
     }
-    .srv-card{
-      grid-column: span 4;
-      background:linear-gradient(180deg,#0d1c26,#0b1921);
-      border:1px solid #0e3340; border-radius:14px; padding:16px;
-      box-shadow:0 10px 30px #0006;
-      transition: transform .08s ease, box-shadow .2s ease, border-color .2s ease;
+    function showToast(msg='¡Mensaje enviado! Te contactaremos pronto.', ok=true){
+        toast.textContent = msg;
+        toast.classList.toggle('err', !ok);
+        toast.classList.add('cd360-toast--show');
+        setTimeout(()=> toast.classList.remove('cd360-toast--show'), 3800);
     }
-    .srv-card:hover{
-      transform: translateY(-2px);
-      box-shadow:0 16px 36px #0009; border-color:#1bd6ff55;
-    }
-    .srv-card h3{ margin:0 0 8px; font-size:18px }
-    .srv-card p{ margin:0; color:#9adfe5 }
-    .srv-badges{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px }
-    .srv-badge{
-      font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid #1a5a64;
-      color:#bff; background:#0a212a;
-    }
-    .servicios-cta{
-      display:flex; justify-content:flex-end; margin-top:14px;
-    }
-    .servicios-cta a{
-      text-decoration:none; font-weight:800; padding:10px 14px; border-radius:12px;
-      background:linear-gradient(135deg,#00E0FF,#00B9D1); color:#02212a;
-      box-shadow:0 10px 24px #00c3d83d; display:inline-block;
+    function setLoading(is){
+        if(is){
+            btnEnviar.classList.add('is-loading');
+            btnEnviar.innerHTML = '<span class="spinner"></span>Enviando…';
+            btnEnviar.disabled = true;
+        }else{
+            btnEnviar.classList.remove('is-loading');
+            btnEnviar.textContent = 'Enviar mensaje';
+            btnEnviar.disabled = false;
+        }
     }
 
-    /* Responsivo */
-    @media (max-width: 1100px){ .srv-card{ grid-column: span 6 } }
-    @media (max-width: 620px){  .srv-card{ grid-column: span 12 } }
-  </style>
-</head>
-<body>
+    // Event Listeners para el modal
+    linkContacto?.addEventListener('click', e => { e.preventDefault(); openModal(); });
+    btnClose?.addEventListener('click', closeModal);
+    btnCancelar?.addEventListener('click', closeModal);
+    overlay.addEventListener('click', e => { if(e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
 
-<header>
-  <h1>Crea Digital 360</h1>
-  <div class="sub">Innovación, datos y diseño al servicio de tu marca</div>
-</header>
-<nav class="site-nav">
-  <a href="#inicio">Inicio</a>
-  <a href="#servicios">Servicios</a>
-   <a href="#Galería">Galería</a>
-    <a href="#Blog">Blog</a>
-  <a href="#" id="link-contacto">Contacto</a>
-</nav>
-<!-- ====== INICIO ====== -->
-<section id="inicio" class="section-wrap">
-  <div class="contenedor">
-    <aside class="menu-lateral">
-      <h2>Menú</h2>
-      <ul>
-        <li><a href="#Inicio">Inicio</a></li>
-        <li><a href="#Servicios">Servicios</a></li>
-         <li><a href="#Blog">Blog</a></li>
-          <li><a href="#Galería">Galería</a></li>
-           <a href="#" id="cta-contacto">Contacto</a>
-           
-      </ul>
-    </aside>
+    // Lógica de Envío del Formulario (CORREGIDA)
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // 1. Validación nativa del formulario
+        if(!form.checkValidity()){ 
+            form.reportValidity(); 
+            return; 
+        }
 
-    <main class="contenido">
-     <style>
-  h1 {
-    text-align: center;
-  }
-</style>
+        // 2. Recoger datos con FormData (compatible con servicios externos)
+        const formData = new FormData(form);
+        
+        // 3. Revisar Honeypot (campo '_gotcha')
+        // Si el campo oculto tiene algo, es un bot. Simular éxito y terminar.
+        const honeypotValue = formData.get('_gotcha');
 
-<h1>Bienvenido</h1>
+        if (honeypotValue && honeypotValue.length > 0) {
+            setLoading(false);
+            showToast('¡Gracias! Tu mensaje fue enviado con éxito.', true);
+            form.reset();
+            closeModal();
+            return; 
+        }
+        
+        // 4. Configurar Timeout y estado de carga
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 15000);
 
-      <section style="background:linear-gradient(135deg, #008B8B, #00CED1); padding:50px 20px; text-align:center; border-radius:12px; margin:40px auto; max-width:850px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-  <h1 style="color:#FFFFFF; font-size:2.5em; margin-bottom:20px; font-family:Arial, sans-serif; font-weight:bold;">
-    Bienvenido a Crea Digital 360 
-  </h1>
-  <p style="color:#FFFFFF; font-size:1.2em; line-height:1.6; font-family:Verdana, sans-serif;">
-    Impulsamos tu marca con estrategias creativas, innovación y resultados medibles. 
-    Aquí, transformamos ideas en experiencias digitales que conectan y generan impacto.
-  </p>
-</section>
+        setLoading(true);
+        try{
+            // 5. Enviar usando fetch a la URL definida en el atributo 'action' del HTML
+            const res = await fetch(form.action, {
+                method:'POST',
+                // Enviamos el objeto FormData. NO se necesitan headers JSON
+                body: formData, 
+                signal: controller.signal
+            });
 
+            clearTimeout(t);
 
-    </main>
+            // 6. Manejo de la Respuesta
+            if(!res.ok){
+                let errorData;
+                const ct = res.headers.get('content-type') || '';
+                if (ct.includes('application/json')) {
+                    errorData = await res.json();
+                    throw new Error(errorData?.error || 'Error desconocido del servicio.');
+                }
+                throw new Error('El servicio de formularios externo falló.');
+            }
 
-    <aside class="sidebar">
-      <h3>Sidebar</h3>
-      <p>Enlaces útiles, noticias y más.</p>
-    </aside>
-  </div>
-</section>
+            // Éxito
+            setLoading(false);
+            showToast('¡Gracias! Tu mensaje fue enviado con éxito.', true);
+            form.reset();
+            closeModal();
+        }catch(err){
+            clearTimeout(t);
+            console.error('Error en fetch:', err);
+            setLoading(false);
 
-<!-- ====== SERVICIOS (mejorado e integrado) ====== -->
-<section id="servicios" class="servicios-wrap">
-  <div class="servicios-head">
-    <h2>Servicios</h2>
-    <div class="servicios-cta">
-      <a href="#" id="cta-contactos">Solicitar una cotización</a>
-    </div>
-  </div>
-
-  <div class="servicios-grid">
-    <!-- Asesoría general -->
-    <article class="srv-card">
-      <h3>Asesoría general</h3>
-      <p>Acompañamiento estratégico para definir objetivos, ruta y prioridades.</p>
-      <div class="srv-badges">
-        <span class="srv-badge">Diagnóstico</span>
-        <span class="srv-badge">Roadmap</span>
-        <span class="srv-badge">Mentoría</span>
-      </div>
-    </article>
-
-    <!-- Desarrollo web -->
-    <article class="srv-card">
-      <h3>Desarrollo web</h3>
-      <p>Sitios rápidos, modernos y seguros, orientados a conversión.</p>
-      <div class="srv-badges">
-        <span class="srv-badge">Landing</span>
-        <span class="srv-badge">Sitio corporativo</span>
-        <span class="srv-badge">Performance</span>
-      </div>
-    </article>
-
-    <!-- Marketing político -->
-    <article class="srv-card">
-      <h3>Marketing político</h3>
-      <p>Estrategia, segmentación y pauta multicanal para campañas.</p>
-      <div class="srv-badges">
-        <span class="srv-badge">Narrativa</span>
-        <span class="srv-badge">Pauta</span>
-        <span class="srv-badge">Territorio & digital</span>
-      </div>
-    </article>
-
-    <!-- Branding / Identidad -->
-    <article class="srv-card">
-      <h3>Branding / Identidad</h3>
-      <p>Construimos marcas con propósito: logo, línea gráfica y manual.</p>
-      <div class="srv-badges">
-        <span class="srv-badge">Logo</span>
-        <span class="srv-badge">Manual</span>
-        <span class="srv-badge">Aplicaciones</span>
-      </div>
-    </article>
-
-    <!-- SEO & Contenido -->
-    <article class="srv-card">
-      <h3>SEO & Contenido</h3>
-      <p>Posicionamiento orgánico con investigación de palabras clave y contenidos.</p>
-      <div class="srv-badges">
-        <span class="srv-badge">SEO on-page</span>
-        <span class="srv-badge">Contenido</span>
-        <span class="srv-badge">Link building</span>
-      </div>
-    </article>
-
-    <!-- Analítica & Data -->
-    <article class="srv-card">
-      <h3>Analítica & Data</h3>
-      <p>Medición, dashboards y experimentación para tomar mejores decisiones.</p>
-      <div class="srv-badges">
-        <span class="srv-badge">GA4</span>
-        <span class="srv-badge">Dashboards</span>
-        <span class="srv-badge">Testing</span>
-      </div>
-    </article>
-
-    <!-- Portafolio / Casos de éxito (mostrado como “servicio” vitrina) -->
-    <article class="srv-card">
-      <h3>Portafolio / Casos</h3>
-      <p>Proyectos destacados y resultados medibles para inspirar tu próxima idea.</p>
-      <div class="srv-badges">
-        <span class="srv-badge">UI/UX</span>
-        <span class="srv-badge">Growth</span>
-        <span class="srv-badge">Impacto</span>
-      </div>
-    </article>
-  </div>
-</section>
-
-<footer>
-  <strong>© 2025 - Crea Digital 360| Todos los derechos reservados</strong>
-</footer>
-
-<!-- ===== Modal de Contacto ===== -->
-<div class="cd360-overlay" id="cd360-overlay" role="dialog" aria-modal="true" aria-hidden="true">
-  <div class="cd360-modal" role="document" aria-labelledby="cd360-titulo">
-    <div class="cd360-header">
-      <h3 class="cd360-title" id="cd360-titulo"><span class="spark"></span> Hablemos</h3>
-      <button class="cd360-close" aria-label="Cerrar">×</button>
-    </div>
-
-    <div class="cd360-body">
-      <form id="cd360-contact-form" novalidate>
-        <div class="cd360-grid">
-          <div class="cd360-field cd360-col-6">
-            <span class="cd360-ico">👤</span>
-            <input class="cd360-input" type="text" id="cd360-nombre" name="nombre" placeholder=" " required>
-            <label class="cd360-label" for="cd360-nombre">Nombre completo*</label>
-          </div>
-          <div class="cd360-field cd360-col-6">
-            <span class="cd360-ico">📧</span>
-            <input class="cd360-input" type="email" id="cd360-email" name="email" placeholder=" " required>
-            <label class="cd360-label" for="cd360-email">Correo electrónico*</label>
-          </div>
-          <div class="cd360-field cd360-col-6">
-            <span class="cd360-ico">📱</span>
-            <input class="cd360-input" type="tel" id="cd360-tel" name="telefono" placeholder=" " pattern="[0-9\s+()-]{7,}">
-            <label class="cd360-label" for="cd360-tel">Teléfono (opcional)</label>
-          </div>
-          <div class="cd360-field cd360-col-6">
-            <!-- ACTUALIZADO: coincide con todos los servicios listados -->
-            <select class="cd360-select" id="cd360-servicio" name="servicio" required>
-              <option value="" disabled selected>— Selecciona un interés —</option>
-              <option>Asesoría general</option>
-              <option>Desarrollo web</option>
-              <option>Marketing político</option>
-              <option>Branding / Identidad</option>
-              <option>SEO & Contenido</option>
-              <option>Analítica & Data</option>
-              <option>Portafolio / Casos</option>
-              <option>Otro</option>
-            </select>
-          </div>
-
-          <div class="cd360-field cd360-col-12">
-            <textarea class="cd360-textarea" id="cd360-mensaje" name="mensaje" placeholder="Cuéntanos tu idea o proyecto*" required></textarea>
-          </div>
-
-          <!-- Honeypot antispam -->
-          <div style="position:absolute; left:-9999px; opacity:0" aria-hidden="true">
-            <label>Empresa (no llenar)</label>
-            <input type="text" id="cd360-empresa" name="empresa" tabindex="-1" autocomplete="off">
-          </div>
-        </div>
-
-        <p class="cd360-note">Al enviar, aceptas ser contactado(a). Protegemos tus datos.</p>
-
-        <div class="cd360-actions">
-          <button type="button" class="cd360-btn cd360-btn--ghost" id="cd360-cancelar">Cancelar</button>
-          <button type="submit" class="cd360-btn cd360-btn--primary" id="cd360-enviar">
-            Enviar mensaje
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Toast -->
-<div class="cd360-toast" id="cd360-toast" role="status" aria-live="polite">
-  ¡Mensaje enviado! Te contactaremos pronto.
-</div>
-
-<script src="app.js"></script>
-<script>
-  // Botón “Solicitar una cotización” abre el modal (sin tocar app.js)
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('cta-contacto')?.addEventListener('click', (e)=>{
-      e.preventDefault();
-      document.getElementById('link-contacto')?.click();
+            // Manejo de errores
+            if (err.name === 'AbortError') {
+                showToast('El servidor tardó demasiado en responder.', false);
+            } else if (String(err).includes('Failed to fetch') || err instanceof TypeError) {
+                showToast('No se pudo conectar con el servicio externo. Verifica tu URL de acción.', false);
+            } else {
+                showToast(err.message || 'Error al enviar. Inténtalo más tarde.', false);
+            }
+        }
     });
-    document.getElementById('cta-contactos')?.addEventListener('click', (e)=>{
-      e.preventDefault();
-      document.getElementById('link-contacto')?.click();
-    });
-  });
-</script>
-</body>
-</html>
-
+});
